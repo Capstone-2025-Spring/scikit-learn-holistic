@@ -1,0 +1,7 @@
+pyqt5>=5.15.0
+opencv-python>=4.7.0
+mediapipe>=0.10.0
+scikit-learn>=1.2.0
+joblib>=1.2.0
+numpy>=1.23.0
+xgboost>=1.7.0
