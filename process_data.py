@@ -1,8 +1,8 @@
 import glob
 import os
 
-from merge_npy_dataset import merge_npy_files
-from process_pose_json import process_pose_json
+from util.merge_npy_dataset import merge_npy_files
+from util.process_pose_json import process_pose_json
 
 # JSON 파일 목록과 각 파일의 라벨 정의
 json_files = [

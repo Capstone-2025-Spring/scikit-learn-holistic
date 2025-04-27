@@ -1,3 +1,5 @@
+# app.py
+
 import os
 import sys
 from collections import deque
@@ -7,7 +9,6 @@ import joblib
 import mediapipe as mp
 import numpy as np
 import torch
-import torch.nn as nn
 from PyQt5.QtCore import QTimer
 from PyQt5.QtGui import QImage, QPixmap
 from PyQt5.QtWidgets import (
@@ -18,7 +19,13 @@ from PyQt5.QtWidgets import (
     QVBoxLayout,
     QWidget,
 )
+
+# === 추가: utils 폴더 import 위해 경로 추가 (필요 시) ===
+sys.path.append(os.path.join(os.path.dirname(__file__), '..'))
+
+# === utils 폴더에서 import ===
 from utils.feature_extractor import extract_features_from_landmarks
+from utils.mlp_classifier import MLPClassifier
 
 # === MediaPipe 초기화 ===
 mp_pose = mp.solutions.pose
@@ -31,21 +38,6 @@ label_map = {
     2: "뒤돌기",
     3: "팔짱끼기",
 }
-
-# === MLPClassifier 정의 ===
-class MLPClassifier(nn.Module):
-    def __init__(self, input_dim=90, num_classes=4):
-        super(MLPClassifier, self).__init__()
-        self.net = nn.Sequential(
-            nn.Linear(input_dim, 128),
-            nn.ReLU(),
-            nn.Linear(128, 64),
-            nn.ReLU(),
-            nn.Linear(64, num_classes)
-        )
-
-    def forward(self, x):
-        return self.net(x)
 
 class PoseApp(QWidget):
     def __init__(self):
@@ -83,7 +75,8 @@ class PoseApp(QWidget):
         self.collected_labels = []
         self.is_capturing = False
         self.model = None
-        self.model_type = None  # 'sklearn' or 'pytorch'
+        self.model_type = None  # 'sklearn' / 'pytorch' / 'pytorch-deferred'
+        self.defer_model_creation = None  # pytorch-deferred 일 때 사용
 
     def load_model_list(self):
         model_dir = "model"
@@ -105,23 +98,30 @@ class PoseApp(QWidget):
                 checkpoint = torch.load(model_path, map_location=torch.device('cpu'))
 
                 if isinstance(checkpoint, dict) and 'model_state_dict' in checkpoint:
-                    input_dim = checkpoint.get('input_dim', 90)
+                    input_dim = checkpoint.get('input_dim')
                     num_classes = checkpoint.get('num_classes', 4)
                     state_dict = checkpoint['model_state_dict']
                 else:
-                    # 🔥 그냥 weight만 저장된 경우
-                    input_dim = 90  # 현재 네 feature dimension
-                    num_classes = 4  # 현재 class 개수
+                    input_dim = None
+                    num_classes = 4
                     state_dict = checkpoint
 
-                self.model = MLPClassifier(input_dim=input_dim, num_classes=num_classes)
-                self.model.load_state_dict(state_dict)
-                self.model.eval()
-                self.model_type = 'pytorch'
-                print(f"✅ PyTorch 모델 {model_name} 로딩 완료 (input_dim={input_dim}, num_classes={num_classes})")
+                if input_dim is None:
+                    print("⚠️ input_dim 정보가 없습니다. feature shape에서 자동 추정합니다.")
+                    self.defer_model_creation = {
+                        "state_dict": state_dict,
+                        "num_classes": num_classes
+                    }
+                    self.model = None
+                    self.model_type = 'pytorch-deferred'
+                else:
+                    self.model = MLPClassifier(input_dim=input_dim, num_classes=num_classes)
+                    self.model.load_state_dict(state_dict)
+                    self.model.eval()
+                    self.model_type = 'pytorch'
+                    print(f"✅ PyTorch 모델 {model_name} 로딩 완료 (input_dim={input_dim}, num_classes={num_classes})")
 
             self.cap = cv2.VideoCapture(0)
-
             if not self.cap.isOpened():
                 print("❌ 카메라를 열 수 없습니다.")
                 return
@@ -151,14 +151,12 @@ class PoseApp(QWidget):
         results = pose.process(rgb)
 
         if results.pose_landmarks:
-            pose_data = []
-            for lm in results.pose_landmarks.landmark:
-                pose_data.append({
-                    "x": lm.x,
-                    "y": lm.y,
-                    "z": lm.z,
-                    "visibility": lm.visibility
-                })
+            pose_data = [{
+                "x": lm.x,
+                "y": lm.y,
+                "z": lm.z,
+                "visibility": lm.visibility
+            } for lm in results.pose_landmarks.landmark]
             self.frame_buffer.append(pose_data)
 
             if len(self.frame_buffer) == 10:
@@ -167,6 +165,14 @@ class PoseApp(QWidget):
                 ])
                 feature = feature.reshape(1, -1)
                 self.collected_features.append(feature.squeeze())
+
+                if self.model_type == 'pytorch-deferred' and self.model is None:
+                    input_dim = feature.shape[1]
+                    print(f"🛠️ feature input_dim={input_dim} 기반으로 MLPClassifier 새로 생성")
+                    self.model = MLPClassifier(input_dim=input_dim, num_classes=self.defer_model_creation["num_classes"])
+                    self.model.load_state_dict(self.defer_model_creation["state_dict"])
+                    self.model.eval()
+                    self.model_type = 'pytorch'
 
                 if self.model:
                     if self.model_type == 'sklearn':

@@ -5,7 +5,7 @@ from datetime import datetime
 
 import numpy as np
 
-from feature_extractor import extract_features_from_landmarks  # ✅ import
+from util.feature_extractor import extract_features_from_landmarks  # ✅ import
 
 
 def process_pose_json(json_path, label, output_dir="processed_data", window_size=10, trim_frame=60):
