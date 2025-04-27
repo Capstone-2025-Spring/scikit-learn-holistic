@@ -6,9 +6,15 @@ from process_pose_json import process_pose_json
 
 # JSON 파일 목록과 각 파일의 라벨 정의
 json_files = [
-    ("holistic_json/holistic_label00_standing.json", 0),
-    ("holistic_json/holistic_label01_reading.json", 1),
     ("holistic_json/holistic_label02_behind.json", 2),
+    ("holistic_json/holistic_back_02.json",2),
+    ("holistic_json/holistic_crossarm_03.json",3),
+    ("holistic_json/holistic_label00_standing_1.json",0),
+    ("holistic_json/holistic_label00_standing.json",0),
+    ("holistic_json/holistic_label03_crossarm_1.json",3),
+    ("holistic_json/holistic_label03_crossarm_2.json",3),
+    ("holistic_json/holistic_stand_01.json",0),
+    ("holistic_json/handsonHead.json",1),
 ]
 
 def run_all_processing():
