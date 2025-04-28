@@ -1,0 +1,15 @@
+Model: MLPClassifier (강화버전)
+Best Valid F1 Macro: 1.0000
+Test F1 Macro: 1.0000
+
+Classification Report:
+              precision    recall  f1-score   support
+
+           0       1.00      1.00      1.00       168
+           1       1.00      1.00      1.00       384
+           2       1.00      1.00      1.00       258
+           3       1.00      1.00      1.00       325
+
+    accuracy                           1.00      1135
+   macro avg       1.00      1.00      1.00      1135
+weighted avg       1.00      1.00      1.00      1135
