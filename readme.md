@@ -1,7 +1,7 @@
 /process_data.py : holistic_json data를 전처리하는 함수. json_Files를 불러와서, 라벨과 함께 로드 후 자동으로 feature extraction(피쳐추출)하고 /dataset에 X_total,Y_total 저장
 
 
-/train_mlp_classifier : 주어진 데이터와 모델을가지고 학습을 하는 파일. 
+/train_mlp_classifier.py : 주어진 데이터와 모델을가지고 학습을 하는 파일. 
       18 line : /classifier 안에있는 classifier을 로드 (classifier 바꿔서 로드하려면 이름 바꿔서 실행하면 됨 {name}_classifier.py)
       학습 후 자동으로 /model 에 weight파일, v1.pt가 추가됨. /report에도 추가됨
       또한 /realtime_pose_predictor/classifier에도 classifer가 자동으로 추가되고 /realtime_pose_predictor/model에도 v1.pt(weight)이 자동으로 들어가므로
