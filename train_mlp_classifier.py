@@ -1,4 +1,4 @@
-# train_mlp_classifier.py (최종 리팩토링 버전)
+# train_mlp_classifier.py (리팩토링 및 디렉토리 구조 개선)
 
 import importlib.util
 import os
@@ -16,14 +16,14 @@ from sklearn.preprocessing import StandardScaler
 from torch.utils.data import DataLoader, TensorDataset
 
 # === 모델 정의 파일 경로 설정 === #
-model_def_file = "v1_classifier.py" # 예: "v1_classifier.py"
-model_base_name = model_def_file.replace("_classifier.py", "")  # 예: v1
+model_def_file = "mlp/v1_classifier.py"
+model_base_name = "mlp/v1"
 
-# === 필요한 디렉토리 생성 === #
-os.makedirs("classifier", exist_ok=True)
-os.makedirs("model", exist_ok=True)
-os.makedirs("realtime_pose_predictor/model", exist_ok=True)
-os.makedirs("realtime_pose_predictor/classifier", exist_ok=True)
+# === 디렉토리 생성 === #
+os.makedirs("classifier/mlp", exist_ok=True)
+os.makedirs("model/mlp", exist_ok=True)
+os.makedirs("realtime_pose_predictor/model/mlp", exist_ok=True)
+os.makedirs("realtime_pose_predictor/classifier/mlp", exist_ok=True)
 os.makedirs("report", exist_ok=True)
 
 # === 모델 정의 파일 로드 === #
@@ -35,7 +35,7 @@ def load_classifier(file_path):
 
 Classifier = load_classifier(os.path.join("classifier", model_def_file))
 
-# === Utility: Clear model directory === #
+# === 모델 디렉토리 초기화 === #
 def clear_directory(dir_path):
     if os.path.exists(dir_path):
         for filename in os.listdir(dir_path):
@@ -50,9 +50,9 @@ def clear_directory(dir_path):
     else:
         os.makedirs(dir_path, exist_ok=True)
 
-clear_directory("model")
+clear_directory("model/mlp")
 
-# === Load and preprocess dataset === #
+# === 데이터 로딩 및 전처리 === #
 X = np.load("dataset/X_total.npy")
 y = np.load("dataset/y_total.npy")
 
@@ -62,9 +62,8 @@ X = scaler.fit_transform(X)
 X_temp, X_test, y_temp, y_test = train_test_split(X, y, test_size=0.2, stratify=y, random_state=42)
 X_train, X_valid, y_train, y_valid = train_test_split(X_temp, y_temp, test_size=0.25, stratify=y_temp, random_state=42)
 
-# === Prepare for training === #
+# === 텐서 변환 === #
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
-
 model = Classifier(input_dim=X.shape[1], num_classes=len(np.unique(y)), dropout_rate=0.3).to(device)
 
 X_train_tensor = torch.tensor(X_train, dtype=torch.float32)
@@ -77,22 +76,21 @@ y_test_tensor = torch.tensor(y_test, dtype=torch.long)
 train_dataset = TensorDataset(X_train_tensor, y_train_tensor)
 train_loader = DataLoader(train_dataset, batch_size=64, shuffle=True)
 
+# === 옵티마이저, 손실함수, 스케줄러 === #
 optimizer = optim.AdamW(model.parameters(), lr=1e-3, weight_decay=1e-4)
 criterion = nn.CrossEntropyLoss()
 scheduler = optim.lr_scheduler.ReduceLROnPlateau(optimizer, mode='max', patience=5, factor=0.5)
 
+# === 학습 === #
 early_stopping_patience = 10
 no_improve_epochs = 0
-
 best_valid_f1 = 0
 best_state_dict = None
 
-# === Training Loop === #
 for epoch in range(100):
     model.train()
     for xb, yb in train_loader:
         xb, yb = xb.to(device), yb.to(device)
-
         optimizer.zero_grad()
         preds = model(xb)
         loss = criterion(preds, yb)
@@ -118,26 +116,19 @@ for epoch in range(100):
         print(f"\nEarly stopping triggered at epoch {epoch}")
         break
 
-# === Save best model === #
+# === 모델 저장 === #
 model_save_dict = {
     'input_dim': X.shape[1],
     'num_classes': len(np.unique(y)),
     'model_state_dict': best_state_dict
 }
 
-# (1) ./model 저장
-torch.save(model_save_dict, f"model/{model_base_name}.pt")
-# (2) ./realtime_pose_predictor/model 저장
-torch.save(model_save_dict, f"realtime_pose_predictor/model/{model_base_name}.pt")
+torch.save(model_save_dict, f"model/mlp/v1.pt")
+torch.save(model_save_dict, f"realtime_pose_predictor/model/mlp/v1.pt")
+shutil.copy("classifier/mlp/v1_classifier.py", "realtime_pose_predictor/classifier/mlp/v1_classifier.py")
 
-# (3) ./realtime_pose_predictor/classifier 저장
-shutil.copy(
-    os.path.join("classifier", model_def_file),
-    os.path.join("realtime_pose_predictor", "classifier", model_def_file)
-)
-
-# === Test evaluation === #
-checkpoint = torch.load(f"model/{model_base_name}.pt")
+# === 테스트 평가 === #
+checkpoint = torch.load("model/mlp/v1.pt")
 model = Classifier(input_dim=checkpoint['input_dim'], num_classes=checkpoint['num_classes'], dropout_rate=0.3).to(device)
 model.load_state_dict(checkpoint['model_state_dict'])
 
@@ -146,8 +137,6 @@ with torch.no_grad():
     y_test_pred = model(X_test_tensor.to(device)).argmax(dim=1).cpu().numpy()
 
 report_text = classification_report(y_test, y_test_pred)
-
-# === Save report with timestamp === #
 timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
 
 with open(f"report/{timestamp}_mlp_report.txt", "w") as f:
@@ -157,7 +146,7 @@ with open(f"report/{timestamp}_mlp_report.txt", "w") as f:
     f.write("Classification Report:\n")
     f.write(report_text)
 
-print(f"\n✅ 학습 및 저장 완료! (model/{model_base_name}.pt)")
-print(f"✅ 학습 및 저장 완료! (realtime_pose_predictor/model/{model_base_name}.pt)")
-print(f"✅ 모델 구조 복사 완료! (realtime_pose_predictor/classifier/{model_def_file})")
+print(f"\n✅ 학습 및 저장 완료! (model/mlp/v1.pt)")
+print(f"✅ 학습 및 저장 완료! (realtime_pose_predictor/model/mlp/v1.pt)")
+print(f"✅ 모델 구조 복사 완료! (realtime_pose_predictor/classifier/mlp/v1_classifier.py)")
 print(f"✅ 성능 리포트 저장 완료! (report/{timestamp}_mlp_report.txt)")

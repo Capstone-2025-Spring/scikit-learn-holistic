@@ -1,0 +1,5 @@
+,CV F1 Macro,Test F1 Macro
+svm,1.0000,1.0000
+random_forest,1.0000,1.0000
+adaboost,0.4771,0.6885
+xgboost,1.0000,1.0000

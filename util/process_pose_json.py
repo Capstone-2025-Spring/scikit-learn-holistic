@@ -20,7 +20,8 @@ def process_pose_json(json_path, label, output_dir="processed_data", window_size
     for frame in holistic_frames:
         landmarks = frame.get("results")
         if landmarks and len(landmarks) == 33:
-            features.append(extract_features_from_landmarks(landmarks))
+            f=extract_features_from_landmarks(landmarks)
+            features.append(f)
 
     features = features[trim_frame:-trim_frame]  # 앞뒤 프레임 자르기
 

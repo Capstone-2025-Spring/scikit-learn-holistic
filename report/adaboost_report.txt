@@ -1,0 +1,15 @@
+Model: adaboost
+CV F1 Macro: 0.4771
+Test F1 Macro: 0.6885
+
+Classification Report:
+              precision    recall  f1-score   support
+
+           0       0.00      0.00      0.00       337
+           1       1.00      1.00      1.00       768
+           2       0.60      1.00      0.75       516
+           3       1.00      1.00      1.00       649
+
+    accuracy                           0.85      2270
+   macro avg       0.65      0.75      0.69      2270
+weighted avg       0.76      0.85      0.80      2270
