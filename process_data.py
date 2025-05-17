@@ -11,12 +11,12 @@ json_files = [
     ("holistic_json/holistic_label02_behind.json", 2),
     ("holistic_json/holistic_back_02.json",2),
     ("holistic_json/holistic_crossarm_03.json",3),
-    ("holistic_json/holistic_label00_standing_1.json",0),
     ("holistic_json/holistic_label00_standing.json",0),
-    ("holistic_json/holistic_label03_crossarm_1.json",3),
-    ("holistic_json/holistic_label03_crossarm_2.json",3),
-    ("holistic_json/holistic_stand_01.json",0),
+    ("holistic_json/gesture_standing.json",0),
     ("holistic_json/handsonHead.json",1),
+    ("holistic_json/holistic_lookingdown.json",4),
+    ("holistic_json/crossing_arm.json",3),
+    ("holistic_json/crosses_arm.json",3),
 ]
 
 def run_all_processing():
