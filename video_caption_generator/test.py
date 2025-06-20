@@ -6,7 +6,7 @@ from run_captioning import run_captioning_from_json
 # 예시 Holistic JSON 데이터 (timestamp + landmarks 33개)
 # 실제로는 33개 전체를 넣어야 하나, 여기선 더미 3개만 사용
 # test_data.json은 {"holisticData": [...]} 구조를 가져야 함
-with open("test_data.json", "r") as f:
+with open("holistic.json", "r") as f:
     holistic_json = json.load(f)
 
         

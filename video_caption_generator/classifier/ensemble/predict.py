@@ -1,7 +1,6 @@
 import os
 import sys
 
-import joblib
 import numpy as np
 import torch
 from xgboost import XGBClassifier
@@ -34,18 +33,25 @@ def load_cnn(rel_path, input_channels=1, num_classes=2):
     return model
 
 
+def load_xgb(rel_path):
+    path = os.path.join(BASE_DIR, rel_path)
+    model = XGBClassifier()
+    model.load_model(path)
+    return model
+
+
 # === Load all models === #
 step1 = load_mlp("step1/step1_0.pt")
 
 step2_mlps = [load_mlp(f"step2/step2_{i}.pt") for i in range(3)]
-step2_xgb = joblib.load(os.path.join(BASE_DIR, "step2/step2_3.pkl"))
+step2_xgb = load_xgb("step2/step2_3.json")
 
 step2a_mlps = [load_mlp(f"step2A/step2A_{i}.pt") for i in range(3)]
 step2a_cnn = load_cnn("step2A/step2A_3.pt")
-step2a_xgb = joblib.load(os.path.join(BASE_DIR, "step2A/step2A_4.pkl"))
+step2a_xgb = load_xgb("step2A/step2A_4.json")
 
 step2b_mlps = [load_mlp(f"step2B/step2B_{i}.pt") for i in range(2)]
-step2b_xgb = joblib.load(os.path.join(BASE_DIR, "step2B/step2B_2.pkl"))
+step2b_xgb = load_xgb("step2B/step2B_2.json")
 
 
 def soft_vote(models, x_tensor):
@@ -65,7 +71,6 @@ def predict_tree(x_flat: np.ndarray) -> int:
 
     # Step 2
     mlp_logits = soft_vote(step2_mlps, x_tensor)
-
     xgb_logits = step2_xgb.predict_proba(x_flat)
     step2_logits = np.mean([mlp_logits, xgb_logits], axis=0)
     pred_step2 = np.argmax(step2_logits)
@@ -82,4 +87,3 @@ def predict_tree(x_flat: np.ndarray) -> int:
         xgb_logits = step2b_xgb.predict_proba(x_flat)
         step2b_logits = np.mean([mlp_logits, xgb_logits], axis=0)
         return 1 if np.argmax(step2b_logits) == 1 else 3
-       

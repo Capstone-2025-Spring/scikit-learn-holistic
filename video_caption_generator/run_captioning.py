@@ -1,9 +1,10 @@
 from datetime import datetime
 
 import numpy as np
-from classifier.ensemble.predict import predict_tree  # ← 당신의 앙상블 파일에서 import
 from utils.feature_extractor import extract_features_from_landmarks
 from utils.label_map import label_map
+
+from classifier.ensemble.predict import predict_tree  # ← 당신의 앙상블 파일에서 import
 
 
 def run_captioning_from_json(json_data):
@@ -31,29 +32,56 @@ def run_captioning_from_json(json_data):
                 window = feature_buffer[-WINDOW_SIZE:]
                 x_flat = np.concatenate(window).reshape(1, -1)
 
-                # 앙상블 모델로 예측
                 pred = predict_tree(x_flat)
                 predictions.append(pred)
                 timestamps.append(ts)
 
-    # 구간별 캡션 생성
+    # ✅ 캡션 구간 병합 포함
     caption_lines = []
     if predictions:
         base_time = timestamps[0]
-        start_idx = 0
-        for i in range(1, len(predictions)):
-            if predictions[i] != predictions[i - 1]:
-                t1 = format_relative(timestamps[start_idx], base_time)
-                t2 = format_relative(timestamps[i - 1], base_time)
-                label_id = predictions[i - 1]
-                label_name = label_map.get(label_id, f"Label {label_id}")
-                caption_lines.append(f"[{t1}~{t2}] {label_name}")
-                start_idx = i
+        i = 0
+        last_label = None
+        last_start = None
+        last_end = None
 
-        # 마지막 구간
-        t1 = format_relative(timestamps[start_idx], base_time)
-        t2 = format_relative(timestamps[-1], base_time)
-        label_id = predictions[-1]
-        label_name = label_map.get(label_id, f"Label {label_id}")
-        caption_lines.append(f"[{t1}~{t2}] {label_name}")
+        while i < len(predictions):
+            label = predictions[i]
+            start_ts = timestamps[i]
+            j = i + 1
+            while j < len(predictions) and predictions[j] == label:
+                j += 1
+            end_ts = timestamps[j - 1]
+
+            # 너무 짧은 구간은 버림
+            if end_ts - start_ts < 500:
+                i = j
+                continue
+
+            # ✅ 이전 구간과 병합 조건: label 같고 시간 gap이 1초 이내
+            if (
+                last_label == label
+                and start_ts - last_end <= 1000
+            ):
+                last_end = end_ts  # 병합 확장
+            else:
+                # 기존 구간 저장
+                if last_label is not None:
+                    t1 = format_relative(last_start, base_time)
+                    t2 = format_relative(last_end, base_time)
+                    caption_lines.append(f"[{t1}:{t2}] {last_label}")
+
+                # 새로운 구간 시작
+                last_label = label
+                last_start = start_ts
+                last_end = end_ts
+
+            i = j
+
+        # 마지막 구간 저장
+        if last_label is not None:
+            t1 = format_relative(last_start, base_time)
+            t2 = format_relative(last_end, base_time)
+            caption_lines.append(f"[{t1}:{t2}] {last_label}")
+
     return caption_lines

@@ -120,8 +120,8 @@ torch.save({
 }, "classifier/ensemble/step2A/step2A_3.pt")
 
 # === XGBoost ===
-xgb = XGBClassifier(n_estimators=100, max_depth=4, learning_rate=0.05)
+xgb = XGBClassifier(n_estimators=100, use_label_encoder=False,max_depth=4, learning_rate=0.05)
 xgb.fit(X, y)
-joblib.dump(xgb, "classifier/ensemble/step2A/step2A_4.pkl")
+xgb.save_model("classifier/ensemble/step2A/step2A_4.json")
 
 print("✅ Step 2A 학습 완료 (MLP 3 + CNN 1 + XGB 1)")

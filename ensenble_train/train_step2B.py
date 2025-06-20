@@ -73,8 +73,8 @@ for i in range(2):
     }, f"classifier/ensemble/step2B/step2B_{i}.pt")
 
 # === XGBoost ===
-xgb = XGBClassifier(n_estimators=100, max_depth=4, learning_rate=0.05)
+xgb = XGBClassifier(n_estimators=100,use_label_encoder=False, max_depth=4, learning_rate=0.05)
 xgb.fit(X, y)
-joblib.dump(xgb, "classifier/ensemble/step2B/step2B_2.pkl")
+xgb.save_model("classifier/ensemble/step2B/step2B_2.json")
 
 print("✅ Step 2B 학습 완료 (MLP 2 + XGB 1)")
