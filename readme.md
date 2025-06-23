@@ -1,23 +1,73 @@
-/process_data.py : holistic_json data를 전처리하는 함수. json_Files를 불러와서, 라벨과 함께 로드 후 자동으로 feature extraction(피쳐추출)하고 /dataset에 X_total,Y_total 저장
+# 🤖 Edu-Mate AI 모델 서버
+
+이 저장소는 Edu-Mate 시스템에서 사용되는 **행동 인식 모델**과 **동작 캡션 생성 모델**의 학습 및 추론 코드를 포함합니다.  
+MediaPipe로 추출한 포즈 데이터를 기반으로, 수업 중 지양해야 할 행동을 탐지하고 이를 기반으로 실시간 피드백을 제공합니다.
+
+---
+
+## 🧩 주요 기능
+
+- Holistic Keypoint JSON 데이터 전처리
+- 다양한 ML/DL 기반 동작 분류기 학습 및 앙상블
+- 실시간 예측 앱 (`cnn_app.py`, `mlp_app.py`, `ensemble_app.py`)
+- t-SNE 기반 시각화 및 리포트 자동 저장
+- JSON 기반 캡션 생성기 (강의 행동 자동 요약)
+
+---
+
+## 📁 디렉토리 구조
+
+```bash
+📦 EduMate-AI/
+├── ensemble_train/              # 앙상블 학습 구성
+│   ├── train_step1.py
+│   ├── train_step2.py
+│   ├── train_step2A.py
+│   └── train_step2B.py
+
+├── holistic_json/              # 학습용 포즈 JSON (수동 수집)
+├── model/                      # 학습된 모델 가중치 저장
+│   ├── cnn/
+│   ├── ensemble/
+│   └── mlp/
+
+├── report/                     # 학습 리포트 및 평가 지표
+├── pkl/                        # scikit-learn 기반 모델들 (.pkl)
+├── util/                       # 데이터 처리 및 특징 추출 유틸
+│   └── feature_extractor.py ...
+
+├── realtime_pose_predictor/    # 실시간 예측 앱
+│   ├── cnn_app.py
+│   ├── mlp_app.py
+│   ├── ensemble_app.py
+│   ├── model/                  # 실시간 추론용 모델 로드
+│   ├── classifier/
+│   ├── utils/
+│   └── tsne.py
+
+├── video_caption_generator/    # 행동 JSON → 캡션 문자열 생성
+│   ├── run_captioning.py
+│   ├── classifier/             # 내부 분류 모델 구조
+│   ├── output/
+│   └── utils/
 
 
-/train_mlp_classifier.py : 주어진 데이터와 모델을가지고 학습을 하는 파일. 
-      18 line : /classifier 안에있는 classifier을 로드 (classifier 바꿔서 로드하려면 이름 바꿔서 실행하면 됨 {name}_classifier.py)
-      학습 후 자동으로 /model 에 weight파일, v1.pt가 추가됨. /report에도 추가됨
-      또한 /realtime_pose_predictor/classifier에도 classifer가 자동으로 추가되고 /realtime_pose_predictor/model에도 v1.pt(weight)이 자동으로 들어가므로
-      학습된 데이터를 어플리케이션으로 테스트하고싶으면 학습후 바로 /realtime_pose_predictor/app.py 실행하면 테스트 가능
+#1. 데이터 전처리 
+python util/process_pose_json.py
 
-      
-/classifier
-      딥러닝 모델 : 추가해가면서 테스트하면 됨. 파일 이름은 {name}_classifier.py 로 고정(자동으로 매칭하기위해서 이름을 고정시켜야함)
+#2. 모델 학습 (MLP or CNN or 앙상블)
+python ensemble_train/train_step1.py      # 1차 판별: 뒤돌기 탐지
+python ensemble_train/train_step2.py      # 전체 클래스 분류
 
-      
-/model
-      학습된 .pt파일이 저장(weight)
+#3. 실시간 예측 실행
+python realtime_pose_predictor/mlp_app.py
 
+#4. 캡션 생성 테스트
+python video_caption_generator/run_captioning.py
 
-/tsne.py : 현재 train용 데이터셋을 2d 시각화
+#사용된 분류기들
+MLPClassifier (PyTorch 기반)
+CNNClassifier
+SVM, Random Forest, XGBoost, AdaBoost
 
-
-/train_mlp_classifier/tsne.py :
-          /train_mlp_classifier/app.py로 테스트 종료후, 데이터가 자동으로 저장되는데 이때 수집한 데이터들을 2d로 시각화
+#앙상블 구조: Soft Voting 기반
