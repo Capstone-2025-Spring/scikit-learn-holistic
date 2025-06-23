@@ -53,25 +53,30 @@ MediaPipe로 추출한 포즈 데이터를 기반으로, 수업 중 지양해야
 
 
 ```
-# 1. 데이터 전처리 
+## 1. 데이터 전처리
+```
 python util/process_pose_json.py
-
-# 2. 모델 학습 (MLP or CNN or 앙상블)
+```
+## 2. 모델 학습 (MLP or CNN or 앙상블)
+```
 python ensemble_train/train_step1.py      # 1차 판별: 뒤돌기 탐지
 python ensemble_train/train_step2.py      # 전체 클래스 분류 팔을 사용하거나 사용하지 않음
 python ensemble_train/train_step2A.py     # 소분류 1 : 팔짱을 끼거나 손을 머리위로 올림
 python ensemble_train/train_step2A.py     # 소분류 2 : 고개를 숙이거나, 가만히 서있음
-
-# 3. 실시간 예측 실행
+```
+## 3. 실시간 예측 실행
+```
 python realtime_pose_predictor/mlp_app.py # 웹캠을 이용한 실시간 예측 PyQt 기반 어플리케이션
-
-# 4. 캡션 생성 테스트
+```
+## 4. 캡션 생성 테스트
+```
 python video_caption_generator/run_captioning.py # 백엔드에 적용되는 json 데이터 기반 캡션 생성 API
-
-# 사용된 분류기들
+```
+## 사용된 분류기들
+```
 MLPClassifier (PyTorch 기반)
 CNNClassifier
 SVM, Random Forest, XGBoost, AdaBoost (Scikit-learn 기반)
+```
+## 앙상블 구조: Soft Voting 기반
 
-#앙상블 구조: Soft Voting 기반
----
