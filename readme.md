@@ -1,4 +1,4 @@
-#  Edu-Mate AI 모델 서버
+#  Edu-Mate AI 모델 개발 레파지토리
 
 이 저장소는 Edu-Mate 시스템에서 사용되는 **행동 인식 모델**과 **동작 캡션 생성 모델**의 학습 및 추론 코드를 포함합니다.  
 MediaPipe로 추출한 포즈 데이터를 기반으로, 수업 중 지양해야 할 행동을 탐지하고 이를 기반으로 실시간 피드백을 제공합니다.
@@ -18,7 +18,7 @@ MediaPipe로 추출한 포즈 데이터를 기반으로, 수업 중 지양해야
 ##  디렉토리 구조
 
 ```bash
-📦 EduMate-AI/
+EduMate-AI/
 ├── ensemble_train/              # 앙상블 학습 구성
 │   ├── train_step1.py
 │   ├── train_step2.py
